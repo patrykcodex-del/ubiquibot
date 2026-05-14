@@ -16,7 +16,12 @@ export async function getLinkedPullRequests(
   const collection = [] as GetLinkedResults[];
   const { data } = await axios.get(`https://github.com/${owner}/${repository}/issues/${issue}`);
   const dom = parse(data);
-  const devForm = dom.querySelector("[data-target='create-branch.developmentForm']") as HTMLElement;
+  const devForm = dom.querySelector("[data-target='create-branch.developmentForm']") as HTMLElement | null;
+  if (!devForm) {
+    context.logger.info(`No linked pull requests found`);
+    return [];
+  }
+
   const linkedList = devForm.querySelectorAll(".my-1");
   if (linkedList.length === 0) {
     context.logger.info(`No linked pull requests found`);
@@ -33,16 +38,16 @@ export async function getLinkedPullRequests(
 
     // extract the organization name and repo name from the link:(e.g. "
     const organization = parts[parts.length - 4];
-    const repository = parts[parts.length - 3];
+    const linkedRepository = parts[parts.length - 3];
     const number = Number(parts[parts.length - 1]);
     const href = `https://github.com${relativeHref}`;
 
-    if (`${organization}/${repository}` !== `${owner}/${repository}`) {
+    if (`${organization}/${linkedRepository}` !== `${owner}/${repository}`) {
       logger.info("Skipping linked pull request from another repository", href);
       continue;
     }
 
-    collection.push({ organization, repository, number, href });
+    collection.push({ organization, repository: linkedRepository, number, href });
   }
 
   return collection;
