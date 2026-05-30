@@ -1,4 +1,4 @@
-import { addAssignees, getAllPullRequests } from "../../../../helpers/issue";
+import { addAssignees, addCommentToIssue, getAllIssueComments, getAllPullRequests } from "../../../../helpers/issue";
 import { calculateDurations } from "../../../../helpers/shared";
 import { Context } from "../../../../types/context";
 import { GitHubIssue, GitHubPayload, GitHubUser, IssueType } from "../../../../types/payload";
@@ -11,6 +11,9 @@ import { generateAssignmentComment } from "./generate-assignment-comment";
 import { getMultiplierInfoToDisplay } from "./get-multiplier-info-to-display";
 import { getTimeLabelsAssigned } from "./get-time-labels-assigned";
 import Runtime from "../../../../bindings/bot-runtime";
+
+const REVIEW_DELAY_RELIEF_COMMENT =
+  "our pull request reviewers seem to be occupied with other matters at the moment. Due to the delay, you are now able to assign yourself to another issue. Thank you for your patience.";
 
 export async function start(context: Context, body: string) {
   const logger = context.logger;
@@ -147,9 +150,19 @@ async function getAvailableOpenedPullRequests(context: Context, username: string
         reviewDelayTolerance
     ) {
       result.push(openedPullRequest);
+      await notifyBountyHunterOfReviewDelayRelief(context, openedPullRequest.number, username);
     }
   }
   return result;
+}
+
+async function notifyBountyHunterOfReviewDelayRelief(context: Context, pullNumber: number, username: string) {
+  const body = `@${username} ${REVIEW_DELAY_RELIEF_COMMENT}`;
+  const comments = await getAllIssueComments(context, pullNumber);
+  if (comments.some((comment) => comment.body?.includes(REVIEW_DELAY_RELIEF_COMMENT))) {
+    return;
+  }
+  await addCommentToIssue(context, body, pullNumber);
 }
 
 async function getOpenedPullRequests(context: Context, username: string) {
