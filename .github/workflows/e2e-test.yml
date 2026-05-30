@@ -23,9 +23,26 @@ jobs:
       - name: Build
         run: bun tsc
 
-      - name: Test
+      - name: Detect E2E credentials
+        id: e2e-credentials
         env:
+          APP_ID: ${{ secrets.APP_ID }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          TEST_ADMIN_PAT: ${{ secrets.TEST_ADMIN_PAT }}
+          TEST_OUTSIDE_COLLABORATOR_PAT: ${{ secrets.TEST_OUTSIDE_COLLABORATOR_PAT }}
+        run: |
+          if [ -n "$APP_ID" ] && [ -n "$PRIVATE_KEY" ] && [ -n "$SUPABASE_KEY" ] && [ -n "$SUPABASE_URL" ] && [ -n "$TEST_ADMIN_PAT" ] && [ -n "$TEST_OUTSIDE_COLLABORATOR_PAT" ]; then
+            echo "has-secrets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-secrets=false" >> "$GITHUB_OUTPUT"
+            echo "E2E secrets are unavailable; this is expected on forks. Build completed with the default github-actions token."
+          fi
 
+      - name: Test
+        if: steps.e2e-credentials.outputs.has-secrets == 'true'
+        env:
           APP_ID: ${{ secrets.APP_ID }}
           # CHATGPT_USER_PROMPT_FOR_IMPORTANT_WORDS:
           # CHATGPT_USER_PROMPT_FOR_MEASURE_SIMILARITY:
