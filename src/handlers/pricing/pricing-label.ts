@@ -1,6 +1,6 @@
 import { Context } from "../../types/context";
 
-import { addLabelToIssue, clearAllPriceLabelsOnIssue } from "../../helpers/issue";
+import { addCommentToIssue, addLabelToIssue, clearAllPriceLabelsOnIssue } from "../../helpers/issue";
 import { createLabel, listLabelsForRepo } from "../../helpers/label";
 import { BotConfig } from "../../types/configuration-types";
 import { Label } from "../../types/label";
@@ -61,6 +61,12 @@ export async function onLabelChangeSetPricing(context: Context): Promise<void> {
 
   const recognizedLabels = getRecognizedLabels(labels, config);
 
+  const conflictingLabelWarning = getConflictingLabelWarning(recognizedLabels);
+  if (conflictingLabelWarning) {
+    await addCommentToIssue(context, conflictingLabelWarning, payload.issue.number);
+    return;
+  }
+
   if (!recognizedLabels.time.length || !recognizedLabels.priority.length) {
     logger.error("No recognized labels to calculate price");
     await clearAllPriceLabelsOnIssue(context);
@@ -101,6 +107,20 @@ function getRecognizedLabels(labels: Label[], config: BotConfig) {
   );
 
   return { time: recognizedTimeLabels, priority: recognizedPriorityLabels };
+}
+
+export function getConflictingLabelWarning(recognizedLabels: { time: Label[]; priority: Label[] }) {
+  const conflicts = [];
+  if (recognizedLabels.time.length > 1) {
+    conflicts.push(`time labels (${recognizedLabels.time.map((label) => `\`${label.name}\``).join(", ")})`);
+  }
+  if (recognizedLabels.priority.length > 1) {
+    conflicts.push(`priority labels (${recognizedLabels.priority.map((label) => `\`${label.name}\``).join(", ")})`);
+  }
+
+  if (!conflicts.length) return null;
+
+  return `⚠️ Conflicting pricing labels detected: ${conflicts.join(" and ")}. Please keep only one label per category before pricing can be calculated.`;
 }
 
 function getMinLabels(recognizedLabels: { time: Label[]; priority: Label[] }) {
