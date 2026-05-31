@@ -6,6 +6,7 @@
 Ubiquity DAO's GitHub Bot for Automating DevPool Management.
 
 ## Table of Contents
+
 1. [Quickstart](#quickstart)
 2. [Environment Variables](#environment-variables)
 3. [Overview](#overview)
@@ -47,13 +48,7 @@ bun start:watch
 - `DISQUALIFY_TIME`: (optional) Set a custom disqualify time (default: 7 days).
 - `OPENAI_API_HOST`: (optional) Set OpenAI host url (default: https://api.openai.com).
 - `OPENAI_API_KEY`: Set OpenAI key.
-- `CHATGPT_USER_PROMPT_FOR_IMPORTANT_WORDS`: (optional) Set a custom user prompt for finding important words
-(default: "I need your help to find important words (e.g. unique adjectives) from github issue below and I want to parse them easily so please separate them using #(No other contexts needed). Please separate the words by # so I can parse them easily. Please answer simply as I only need the important words. Here is the issue content.\n").
-- `CHATGPT_USER_PROMPT_FOR_MEASURE_SIMILARITY`: (optional) Set a custom user prompt for measuring similarity
-(default: 'I have two github issues and I need to measure the possibility of the 2 issues are the same content (No other contents needed and give me only the number in %).\n Give me in number format and add % after the number.\nDo not tell other things since I only need the number (e.g. 85%). Here are two issues:\n 1. "%first%"\n2. "%second%"').
-- `SIMILARITY_THRESHOLD`: (optional) Set similarity threshold (default: 80).
-- `MEASURE_SIMILARITY_AI_TEMPERATURE`: (optional) Set ChatGPT temperature for measuring similarity (default: 0).
-- `IMPORTANT_WORDS_AI_TEMPERATURE`: (optional) Set ChatGPT temperature for finding important words (default: 0).
+- Duplicate issue detection prompts, similarity threshold, and temperatures are repository configuration values in `.github/ubiquibot-config.yml`; see [Configuration](#configuration).
 - `WEBHOOK_PROXY_URL`: (required) should be automatically filled when you install UbiquiBot
 - `WEBHOOK_SECRET`: (required) should be automatically filled when the app is installed
 
@@ -106,7 +101,6 @@ If you are an external developer, `APP_ID`and `PRIVATE_KEY` are automatically ge
 
 ### Congratulations! you successfully installed UbiquiBot (new or to an existing app)
 
-
 ## Update an Existing Github App (bot)
 
 **After you hit http://localhost:3000 you have the option to edit an existing app (if you think you have already registered a bot and when to reuse that same app)**
@@ -117,7 +111,6 @@ If you are an external developer, `APP_ID`and `PRIVATE_KEY` are automatically ge
 ![repoaccess](https://github.com/ubiquity/ubiquibot/assets/41552663/bb389559-aaec-4bec-8ac0-97cefea63b16)
 
 **hen at the same time hit to "APP SETTINGS"**
-
 
 **Update the WebHook URL by the one auto-provided by the bot's installation page (this is a must) and edit the webhook secret that you'll use at .env**
 
@@ -131,18 +124,15 @@ If you are an external developer, `APP_ID`and `PRIVATE_KEY` are automatically ge
 
 ![logo](https://github.com/ubiquity/ubiquibot/assets/41552663/716639d4-4646-4f14-bc3f-a39cfaf0fada)
 
-
 ## The Good News it's after you install the bot by using an existing app you'll get
 
 ![success](https://github.com/ubiquity/ubiquibot/assets/41552663/87e85b37-c077-41f1-a7dc-41047d8a3b20)
-
 
 **Important things with private keys (.pem) at .env**
 
 1. The private key gets automatically filled after the app is installed to a github handle but not as an existing app
 2. The private key cannot be separated in spaces
 3. The private key is a string into its env var rather than a just opened info without "" otherwise it will not be recognized and you'll get unauthorized access
-
 
 **Note:** When setting up the project, please do not rename the `.env.example` file to `.env` as it will delete the environment example from the repository.
 Instead, it is recommended to make a copy of the `.env.example` file and replace the values with the appropriate ones.
@@ -189,6 +179,22 @@ To test the bot, you can:
 
 `assistivePricing` to create a new pricing label if it doesn't exist. Can be `true` or `false`.
 
+`features.duplicateIssueDetection` configures duplicate issue detection per repository instead of through deployment-wide environment variables:
+
+```yaml
+features:
+  duplicateIssueDetection:
+    similarityThreshold: 80
+    measureSimilarityPrompt: 'Compare these two GitHub issues and return only a similarity percentage from 0% to 100%. Issue 1: "%first%" Issue 2: "%second%"'
+    importantWordsPrompt: "Find the important words in this GitHub issue. Return only the words, separated by #."
+    measureSimilarityTemperature: 0
+    importantWordsTemperature: 0
+```
+
+- `similarityThreshold` must be between `0` and `100`.
+- `measureSimilarityPrompt` may use `%first%` and `%second%` placeholders for the two issue bodies being compared.
+- Temperature values must be between `0` and `2`.
+
 `disableAnalytics` can be `true` or `false` that disables or enables weekly analytics collection by Ubiquity.
 
 `paymentPermitMaxPrice` sets the max amount for automatic payout of tasks when the issue is closed.
@@ -228,6 +234,7 @@ SUPABASE_KEY="XXX"
 ### Option 2
 
 Supabase comes with a [readme](https://github.com/ubiquity/ubiquibot/blob/development/supabase/README.md) which is helpful for managing and setup
+
 ### This options will require you to have a local Docker installation (under the hood it is required by Supabase) refer to [Supabase Docs](https://supabase.com/docs)
 
 ```
@@ -235,6 +242,7 @@ bun supabase start
 ```
 
 ## Check Supabase Status (locally)
+
 ```
 bun supabase status
 ```
@@ -244,7 +252,6 @@ bun supabase status
 ## Supabase Studio
 
 You can then access to Supabase Studio by going to http://localhost:54323
-
 
 2. Add `FOLLOW_UP_TIME` and `DISQUALIFY_TIME` to the `.env` file if you don't want to use default ones.
 
@@ -264,7 +271,7 @@ DISQUALIFY_TIME="7 days" // 7 days
 At this point the `.env` files auto-fill the empty fields (`PRIVATE_KEY` and `APP_ID`) if it is not previously filled.
 Now you can make changes to the repository on GitHub (e.g. add a task) and the bot should react.
 
-6. After adding the bot (as a installed app) to your github you will need to restart the aforementioned `bun start:watch`` so CTRL-C to stop the node daemon and `bun start:watch` again
+6. After adding the bot (as a installed app) to your github you will need to restart the aforementioned ` bun start:watch`` so CTRL-C to stop the node daemon and  `bun start:watch` again
 
 You can, for example:
 
@@ -373,7 +380,6 @@ We can't use a `jsonc` file due to limitations with Netlify. Here is a snippet o
 ##### Dashboard > Project > Database > Extensions
 
 > Search `PG_CRON` and Enable it.
-
 
 ##### Dashboard > Project > SQL Editor
 

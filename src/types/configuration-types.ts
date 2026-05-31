@@ -30,6 +30,12 @@ const defaultPriorityLabels = [
   "Priority: 5 (Emergency)",
 ];
 
+const duplicateIssueImportantWordsPrompt =
+  "Find the important words in this GitHub issue. Return only the words, separated by #.";
+
+const duplicateIssueSimilarityPrompt =
+  'Compare these two GitHub issues and return only a similarity percentage from 0% to 100%. Issue 1: "%first%" Issue 2: "%second%"';
+
 function strictObject<T extends TProperties>(obj: T, options?: ObjectOptions) {
   return T.Object<T>(obj, { additionalProperties: false, default: {}, ...options });
 }
@@ -68,6 +74,13 @@ const botConfigSchema = strictObject(
     features: strictObject({
       assistivePricing: T.Boolean({ default: false }),
       defaultLabels: T.Array(T.String(), { default: [] }),
+      duplicateIssueDetection: strictObject({
+        similarityThreshold: T.Number({ default: 80, minimum: 0, maximum: 100 }),
+        measureSimilarityPrompt: T.String({ default: duplicateIssueSimilarityPrompt }),
+        importantWordsPrompt: T.String({ default: duplicateIssueImportantWordsPrompt }),
+        measureSimilarityTemperature: T.Number({ default: 0, minimum: 0, maximum: 2 }),
+        importantWordsTemperature: T.Number({ default: 0, minimum: 0, maximum: 2 }),
+      }),
       newContributorGreeting: strictObject({
         enabled: T.Boolean({ default: false }),
         header: T.String({ default: defaultGreetingHeader }),
